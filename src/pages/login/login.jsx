@@ -7,10 +7,9 @@ import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 const Login = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const role = location.state?.role; // Role bilgisi state üzerinden alınır
+  const role = location.state?.role; 
 
   useEffect(() => {
-    // Eğer role bilgisi gelmemişse ana sayfaya yönlendir
     if (!role) {
       navigate('/');
     }
@@ -25,6 +24,8 @@ const Login = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
+  const [formErrors, setFormErrors] = useState({});
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({
@@ -33,19 +34,40 @@ const Login = () => {
     });
   };
 
+  const validate = () => {
+    const errors = {};
+
+    if (!formData.email) {
+      errors.email = 'E-posta adresi gereklidir.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = 'Geçerli bir e-posta adresi giriniz.';
+    }
+
+    if (!formData.password) {
+      errors.password = 'Parola gereklidir.';
+    } else if (formData.password.length < 6) {
+      errors.password = 'Parola en az 6 karakter olmalıdır.';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
 
+    if (!validate()) {
+      return;
+    }
+
     const auth = getAuth();
 
     try {
-      // Firebase Authentication ile giriş yap
       const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
       const user = userCredential.user;
 
-      // "Beni Hatırla" özelliği
       if (formData.rememberMe) {
         localStorage.setItem('userEmail', formData.email);
       } else {
@@ -71,7 +93,7 @@ const Login = () => {
   };
 
   const handleRegister = () => {
-    navigate('/register'); // Register sayfasına yönlendir
+    navigate('/register'); 
   };
 
   return (
@@ -105,7 +127,7 @@ const Login = () => {
           gutterBottom
           sx={{ fontWeight: 'bold', color: '#536dfe' }}
         >
-          {role ? `${role} Girişi` : 'Giriş'}
+        {role === 'admin' ? 'Admin Girişi' : role === 'worker' ? 'Çalışan Girişi' : role === 'stokcu' ? 'Stokçu Girişi' : 'Giriş'}
         </Typography>
         {successMessage && (
           <Alert severity="success" sx={{ marginBottom: 2 }}>
@@ -127,6 +149,8 @@ const Login = () => {
             type="email"
             margin="normal"
             variant="outlined"
+            error={!!formErrors.email}
+            helperText={formErrors.email}
             sx={{
               backgroundColor: '#1c1c1c',
               borderRadius: 2,
@@ -144,6 +168,8 @@ const Login = () => {
             type="password"
             margin="normal"
             variant="outlined"
+            error={!!formErrors.password}
+            helperText={formErrors.password}
             sx={{
               backgroundColor: '#1c1c1c',
               borderRadius: 2,
