@@ -117,7 +117,7 @@ const Register = () => {
           gutterBottom
           sx={{ fontWeight: 'bold', color: '#536dfe' }}
         >
-          Kayıt Ol
+          Kullanıcı Ekle
         </Typography>
         {successMessage && (
           <Alert severity="success" sx={{ marginBottom: 2 }}>
@@ -247,7 +247,7 @@ const Register = () => {
               },
             }}
           >
-            Kayıt Ol
+            Ekle
           </Button>
         </form>
       </Paper>

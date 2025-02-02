@@ -1,26 +1,60 @@
 /* eslint-disable no-unused-vars */
+// src/Router/AppRouter.jsx
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import RoleSelection from '../pages/roleSelection/RoleSelection';
-import Login from '../pages/login/login';
-import Register from '../pages/register/register';
-import AdminPage from '../pages/adminPage/adminPage';
-import WorkerPage from '../pages/workerPage/workerPage';
-import StockPage from '../pages/stockPage/stockPage';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import Login from '../pages/login/Login';
+import Register from '../pages/Register/Register';
+import AdminPage from '../pages/AdminPage/AdminPage';
+import WorkerPage from '../pages/WorkerPage/WorkerPage';
+import StockPage from '../pages/StockPage/StockPage';
+import Unauthorized from '../pages/Unauthorized/Unauthorized'; 
+import ProtectedRoute from './ProtectedRoute';
 
 const AppRouter = () => {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<RoleSelection />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/admin" element={<AdminPage/>} />
-        <Route path="/worker" element={<WorkerPage />} />
-        <Route path="/stock" element={<StockPage />} />
-      </Routes>
-    </Router>
+    <Routes>
+      {/* Hem / hem de /login sayfası Login bileşenini gösterecek */}
+      <Route path="/" element={<Login />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/unauthorized" element={<Unauthorized />} />
+
+      <Route
+        path="/worker"
+        element={
+          <ProtectedRoute allowedRoles={['worker', 'admin']}>
+            <WorkerPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/register"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <Register />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/stock"
+        element={
+          <ProtectedRoute allowedRoles={['stock', 'admin']}>
+            <StockPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminPage />
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
   );
 };
- 
+
 export default AppRouter;

@@ -1,36 +1,64 @@
 /* eslint-disable no-unused-vars */
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { TextField, Button, Box, Typography, Paper, Alert, FormControlLabel, Checkbox } from '@mui/material';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { TextField, Button, Box, Typography, Paper, Alert, FormControlLabel, Checkbox } from "@mui/material";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../../firebase"; // Firestore bağlantısını içe aktar
 
 const Login = () => {
-  const location = useLocation();
   const navigate = useNavigate();
-  const role = location.state?.role; 
-
-  useEffect(() => {
-    if (!role) {
-      navigate('/');
-    }
-  }, [role, navigate]);
-
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+    email: "",
+    password: "",
     rememberMe: false,
   });
 
-  const [errorMessage, setErrorMessage] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
-
+  const [errorMessage, setErrorMessage] = useState("");
   const [formErrors, setFormErrors] = useState({});
+
+  useEffect(() => {
+    const auth = getAuth();
+
+    // Kullanıcı giriş yapmışsa yönlendirme yap
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const userDocRef = doc(db, "users", user.uid);
+          const userDocSnap = await getDoc(userDocRef);
+
+          if (userDocSnap.exists()) {
+            const userRole = userDocSnap.data().role;
+
+            // Kullanıcıyı rolüne göre yönlendir
+            switch (userRole) {
+              case "admin":
+                navigate("/admin", { replace: true });
+                break;
+              case "worker":
+                navigate("/worker", { replace: true });
+                break;
+              case "stock":
+                navigate("/stock", { replace: true });
+                break;
+              default:
+                navigate("/unauthorized", { replace: true });
+            }
+          }
+        } catch (error) {
+          console.error("Kullanıcı rolü alınırken hata oluştu:", error);
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [navigate]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({
       ...formData,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: type === "checkbox" ? checked : value,
     });
   };
 
@@ -38,15 +66,15 @@ const Login = () => {
     const errors = {};
 
     if (!formData.email) {
-      errors.email = 'E-posta adresi gereklidir.';
+      errors.email = "E-posta adresi gereklidir.";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = 'Geçerli bir e-posta adresi giriniz.';
+      errors.email = "Geçerli bir e-posta adresi giriniz.";
     }
 
     if (!formData.password) {
-      errors.password = 'Parola gereklidir.';
+      errors.password = "Parola gereklidir.";
     } else if (formData.password.length < 6) {
-      errors.password = 'Parola en az 6 karakter olmalıdır.';
+      errors.password = "Parola en az 6 karakter olmalıdır.";
     }
 
     setFormErrors(errors);
@@ -55,8 +83,7 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrorMessage('');
-    setSuccessMessage('');
+    setErrorMessage("");
 
     if (!validate()) {
       return;
@@ -68,72 +95,68 @@ const Login = () => {
       const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
       const user = userCredential.user;
 
-      if (formData.rememberMe) {
-        localStorage.setItem('userEmail', formData.email);
-      } else {
-        localStorage.removeItem('userEmail');
-      }
+      // Kullanıcının rolünü Firestore'dan çek
+      const userDocRef = doc(db, "users", user.uid);
+      const userDocSnap = await getDoc(userDocRef);
 
-      // Role göre yönlendirme
-      if (role === 'admin') {
-        navigate('/admin');
-      } else if (role === 'worker') {
-        navigate('/worker');
-      } else if (role === 'stokcu') {
-        navigate('/stock');
-      } else {
-        setErrorMessage('Geçersiz rol. Erişim reddedildi.');
-      }
+      if (userDocSnap.exists()) {
+        const userRole = userDocSnap.data().role;
 
-      setSuccessMessage(`Giriş başarılı! Rol: ${role}, Hoş geldiniz, ${user.email}`);
+        // Kullanıcı rolüne göre yönlendirme yap
+        switch (userRole) {
+          case "admin":
+            navigate("/admin", { replace: true });
+            break;
+          case "worker":
+            navigate("/worker", { replace: true });
+            break;
+          case "stock":
+            navigate("/stock", { replace: true });
+            break;
+          default:
+            navigate("/unauthorized", { replace: true });
+        }
+      } else {
+        setErrorMessage("Kullanıcı rolü bulunamadı.");
+      }
     } catch (error) {
-      console.error('Giriş hatası:', error);
-      setErrorMessage(`Giriş sırasında bir hata oluştu: ${error.message}`);
+      setErrorMessage("Giriş başarısız: " + error.message);
     }
-  };
-
-  const handleRegister = () => {
-    navigate('/register'); 
   };
 
   return (
     <Box
       sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        background: 'linear-gradient(to bottom, #000000, #1a237e)',
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: "100vh",
+        background: "linear-gradient(to bottom, #000000, #1a237e)",
         padding: 2,
-        color: '#ffffff',
+        color: "#ffffff",
       }}
     >
       <Paper
         elevation={6}
         sx={{
-          width: '100%',
+          width: "100%",
           maxWidth: 400,
-          backgroundColor: '#212121',
+          backgroundColor: "#212121",
           padding: 4,
           borderRadius: 4,
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.6)',
-          color: '#ffffff',
+          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.6)",
+          color: "#ffffff",
         }}
       >
         <Typography
           variant="h4"
           textAlign="center"
           gutterBottom
-          sx={{ fontWeight: 'bold', color: '#536dfe' }}
+          sx={{ fontWeight: "bold", color: "#536dfe" }}
         >
-        {role === 'admin' ? 'Admin Girişi' : role === 'worker' ? 'Çalışan Girişi' : role === 'stokcu' ? 'Stokçu Girişi' : 'Giriş'}
+          Giriş Yapın
         </Typography>
-        {successMessage && (
-          <Alert severity="success" sx={{ marginBottom: 2 }}>
-            {successMessage}
-          </Alert>
-        )}
         {errorMessage && (
           <Alert severity="error" sx={{ marginBottom: 2 }}>
             {errorMessage}
@@ -152,11 +175,11 @@ const Login = () => {
             error={!!formErrors.email}
             helperText={formErrors.email}
             sx={{
-              backgroundColor: '#1c1c1c',
+              backgroundColor: "#1c1c1c",
               borderRadius: 2,
-              color: '#ffffff',
-              input: { color: '#ffffff' },
-              label: { color: '#aaaaaa' },
+              color: "#ffffff",
+              input: { color: "#ffffff" },
+              label: { color: "#aaaaaa" },
             }}
           />
           <TextField
@@ -171,11 +194,11 @@ const Login = () => {
             error={!!formErrors.password}
             helperText={formErrors.password}
             sx={{
-              backgroundColor: '#1c1c1c',
+              backgroundColor: "#1c1c1c",
               borderRadius: 2,
-              color: '#ffffff',
-              input: { color: '#ffffff' },
-              label: { color: '#aaaaaa' },
+              color: "#ffffff",
+              input: { color: "#ffffff" },
+              label: { color: "#aaaaaa" },
             }}
           />
           <FormControlLabel
@@ -184,10 +207,10 @@ const Login = () => {
                 name="rememberMe"
                 checked={formData.rememberMe}
                 onChange={handleChange}
-                sx={{ color: '#536dfe' }}
+                sx={{ color: "#536dfe" }}
               />
             }
-            label={<Typography sx={{ color: '#ffffff' }}>Beni Hatırla</Typography>}
+            label={<Typography sx={{ color: "#ffffff" }}>Beni Hatırla</Typography>}
             sx={{ marginTop: 1 }}
           />
           <Button
@@ -197,38 +220,18 @@ const Login = () => {
             sx={{
               marginTop: 2,
               padding: 1.5,
-              fontSize: '1rem',
-              textTransform: 'none',
-              background: 'linear-gradient(to right, #3949ab, #536dfe)',
-              color: '#ffffff',
+              fontSize: "1rem",
+              textTransform: "none",
+              background: "linear-gradient(to right, #3949ab, #536dfe)",
+              color: "#ffffff",
               borderRadius: 2,
-              boxShadow: '0 3px 15px rgba(0, 0, 0, 0.5)',
-              '&:hover': {
-                background: 'linear-gradient(to right, #303f9f, #3d5afe)',
+              boxShadow: "0 3px 15px rgba(0, 0, 0, 0.5)",
+              "&:hover": {
+                background: "linear-gradient(to right, #303f9f, #3d5afe)",
               },
             }}
           >
             Giriş Yap
-          </Button>
-          <Button
-            fullWidth
-            variant="outlined"
-            onClick={handleRegister}
-            sx={{
-              marginTop: 2,
-              padding: 1.5,
-              fontSize: '1rem',
-              textTransform: 'none',
-              color: '#536dfe',
-              borderColor: '#536dfe',
-              borderRadius: 2,
-              '&:hover': {
-                backgroundColor: '#303f9f',
-                color: '#ffffff',
-              },
-            }}
-          >
-            Kayıt Ol
           </Button>
         </form>
       </Paper>
