@@ -49,6 +49,13 @@ const Header = () => {
             >
               Kullanıcı ekle
             </Typography>
+            <Typography
+              variant="body1"
+              sx={{ cursor: "pointer", color: "#fff" }}
+              onClick={() => navigate("/logs")}
+            >
+              Kullanıcı Hareketleri
+            </Typography>
           </Grid>
 
           {/* Logout butonunu en sağa almak için xs yerine "auto" kullan ve justifyContent: "flex-end" ekle */}

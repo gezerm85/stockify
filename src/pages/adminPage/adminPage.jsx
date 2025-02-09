@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import CoffeeAddForm from '../../components/CoffeeAddForm/CoffeeAddForm';
 import { Tabs, Tab, Box, Typography } from '@mui/material';
 import ProductTable from '../../components/ProductTable/ProductTable';
+import StockTable from '../../components/Stock/StockTable';
 
 
 const AdminPage = () => {
@@ -33,11 +34,7 @@ const AdminPage = () => {
         <Box sx={{ mt: 2 }}>
           {activeTab === 0 && <CoffeeAddForm />}
           {activeTab === 1 && <ProductTable/>}
-          {activeTab === 2 && (
-            <div>
-              test test
-            </div>
-          )}
+          {activeTab === 2 && <StockTable/>}
         </Box>
       </Box>
     </Box>

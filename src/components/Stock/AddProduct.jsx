@@ -1,6 +1,15 @@
 import { useState, useEffect } from "react";
 import { db } from "../../firebase";
-import { collection, addDoc, doc, getDoc, getDocs, query, where, updateDoc } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  updateDoc,
+} from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import {
   Box,
@@ -35,7 +44,7 @@ export default function AddProduct() {
   const auth = getAuth();
   const user = auth.currentUser;
 
-  // Kullanıcı adını Firestore'dan çek
+  // Kullanıcı bilgisi ve rolünü Firestore'dan çek
   useEffect(() => {
     const fetchUserData = async () => {
       if (user) {
@@ -45,6 +54,8 @@ export default function AddProduct() {
 
           if (userSnap.exists()) {
             setUserData(userSnap.data());
+          } else {
+            console.error("Kullanıcı bilgisi bulunamadı.");
           }
         } catch (error) {
           console.error("Kullanıcı bilgisi çekilirken hata:", error);
@@ -108,6 +119,7 @@ export default function AddProduct() {
         quantityAdded: parseFloat(product.quantity),
         unit: product.unit,
         timestamp: new Date(),
+        role: userData?.role || "Bilinmeyen Rol", // Kullanıcının rolünü loga ekle
       });
 
       setSnackbarType("success");

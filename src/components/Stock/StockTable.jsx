@@ -16,7 +16,6 @@ import {
   TableRow,
   Paper,
   Box,
-  Typography,
   Button,
   IconButton,
   TextField,
@@ -26,6 +25,7 @@ import {
   DialogTitle,
   Select,
   MenuItem,
+  Typography
 } from "@mui/material";
 import { Edit, Delete } from "@mui/icons-material";
 
@@ -36,69 +36,69 @@ const unitOptions = [
   { value: "lt", label: "lt" },
 ];
 
-export default function ProductTable() {
-  const [coffees, setCoffees] = useState([]);
-  const [filteredCoffees, setFilteredCoffees] = useState([]);
+export default function StockTable() {
+  const [stocks, setStocks] = useState([]);
+  const [filteredStocks, setFilteredStocks] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [editCoffee, setEditCoffee] = useState(null);
+  const [editStock, setEditStock] = useState(null);
   const [open, setOpen] = useState(false);
 
-  // Firestore'dan kahve verilerini çek
+  // Firestore'dan stok verilerini çek
   useEffect(() => {
-    const fetchCoffees = async () => {
+    const fetchStocks = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, "coffees"));
-        const fetchedCoffees = querySnapshot.docs.map((doc) => ({
+        const querySnapshot = await getDocs(collection(db, "stock"));
+        const fetchedStocks = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
-        setCoffees(fetchedCoffees);
-        setFilteredCoffees(fetchedCoffees); // İlk etapta tüm veriler gösterilir
+        setStocks(fetchedStocks);
+        setFilteredStocks(fetchedStocks); // İlk etapta tüm veriler gösterilir
       } catch (error) {
-        console.error("Kahveleri çekerken hata:", error);
+        console.error("Stokları çekerken hata:", error);
       }
     };
 
-    fetchCoffees();
+    fetchStocks();
   }, []);
 
   // Arama işlemi
   const handleSearch = () => {
-    const filtered = coffees.filter((coffee) =>
-      coffee.roomStockNumber.toLowerCase().includes(searchTerm.toLowerCase())
+    const filtered = stocks.filter((stock) =>
+      stock.stockNumber.toLowerCase().includes(searchTerm.toLowerCase())
     );
-    setFilteredCoffees(filtered);
+    setFilteredStocks(filtered);
   };
 
-  // Ürünü güncelle
+  // Stok güncelleme
   const handleUpdate = async () => {
-    if (!editCoffee) return;
+    if (!editStock) return;
 
     try {
-      const coffeeRef = doc(db, "coffees", editCoffee.id);
-      await updateDoc(coffeeRef, { ...editCoffee });
+      const stockRef = doc(db, "stock", editStock.id);
+      await updateDoc(stockRef, { ...editStock });
 
-      setCoffees((prev) =>
-        prev.map((c) => (c.id === editCoffee.id ? editCoffee : c))
+      setStocks((prev) =>
+        prev.map((s) => (s.id === editStock.id ? editStock : s))
       );
 
-      setFilteredCoffees((prev) =>
-        prev.map((c) => (c.id === editCoffee.id ? editCoffee : c))
+      setFilteredStocks((prev) =>
+        prev.map((s) => (s.id === editStock.id ? editStock : s))
       );
 
       setOpen(false);
-      setEditCoffee(null);
+      setEditStock(null);
     } catch (error) {
       console.error("Güncelleme hatası:", error);
     }
   };
 
-  // Ürünü sil
+  // Stok silme
   const handleDelete = async (id) => {
     try {
-      await deleteDoc(doc(db, "coffees", id));
-      setCoffees((prev) => prev.filter((c) => c.id !== id));
-      setFilteredCoffees((prev) => prev.filter((c) => c.id !== id));
+      await deleteDoc(doc(db, "stock", id));
+      setStocks((prev) => prev.filter((s) => s.id !== id));
+      setFilteredStocks((prev) => prev.filter((s) => s.id !== id));
     } catch (error) {
       console.error("Silme hatası:", error);
     }
@@ -106,7 +106,7 @@ export default function ProductTable() {
 
   return (
     <Box sx={{ padding: 4, backgroundColor: "#f4f6f9", borderRadius: 3 }}>
-      <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between">
         <Typography
           variant="h4"
           fontWeight={600}
@@ -116,20 +116,24 @@ export default function ProductTable() {
         >
           Kahve Listesi
         </Typography>
-          <div className="flex   gap-4">
-          <TextField
-          label="Ara"
-          variant="outlined"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <Button variant="contained" color="primary" onClick={handleSearch}>
-          Ara
-        </Button>
-          </div>
-      </div>
-
-      {/* Arama Kutusu ve Butonu */}
+            <div className="flex justify-between gap-4">
+            <TextField
+     
+            label="Ara"
+            variant="outlined"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+                    <Button
+   
+            variant="contained"
+            color="primary"
+            onClick={handleSearch}
+          >
+            Ara
+          </Button>
+            </div>
+        </div>
 
       <TableContainer component={Paper} sx={{ borderRadius: 3 }}>
         <Table>
@@ -142,7 +146,7 @@ export default function ProductTable() {
                   textAlign: "center",
                 }}
               >
-                Stok No
+                Stok Numarası
               </TableCell>
               <TableCell
                 sx={{
@@ -151,7 +155,7 @@ export default function ProductTable() {
                   textAlign: "center",
                 }}
               >
-                Kahve İsmi
+                Ürün Adı
               </TableCell>
               <TableCell
                 sx={{
@@ -169,7 +173,7 @@ export default function ProductTable() {
                   textAlign: "center",
                 }}
               >
-                Ölçü Birimi
+                Birim
               </TableCell>
               <TableCell
                 sx={{
@@ -178,16 +182,7 @@ export default function ProductTable() {
                   textAlign: "center",
                 }}
               >
-                Pompa
-              </TableCell>
-              <TableCell
-                sx={{
-                  fontWeight: "bold",
-                  color: "#ffffff",
-                  textAlign: "center",
-                }}
-              >
-                Şurup
+                Son Güncelleyen
               </TableCell>
               <TableCell
                 sx={{
@@ -201,23 +196,22 @@ export default function ProductTable() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredCoffees.length > 0 ? (
-              filteredCoffees.map((coffee) => (
+            {filteredStocks.length > 0 ? (
+              filteredStocks.map((stock) => (
                 <TableRow
-                  key={coffee.id}
+                  key={stock.id}
                   sx={{ "&:hover": { backgroundColor: "#eceff1" } }}
                 >
-                  <TableCell align="center">{coffee.roomStockNumber}</TableCell>
-                  <TableCell align="center">{coffee.coffeeName}</TableCell>
-                  <TableCell align="center">{coffee.coffeeAmount}</TableCell>
-                  <TableCell align="center">{coffee.coffeeUnit}</TableCell>
-                  <TableCell align="center">{coffee.pumpCount}</TableCell>
-                  <TableCell align="center">{coffee.syrupAmount}</TableCell>
+                  <TableCell align="center">{stock.stockNumber}</TableCell>
+                  <TableCell align="center">{stock.productName}</TableCell>
+                  <TableCell align="center">{stock.quantity}</TableCell>
+                  <TableCell align="center">{stock.unit}</TableCell>
+                  <TableCell align="center">{stock.lastUpdatedBy}</TableCell>
                   <TableCell align="center">
                     <IconButton
                       color="primary"
                       onClick={() => {
-                        setEditCoffee(coffee);
+                        setEditStock(stock);
                         setOpen(true);
                       }}
                     >
@@ -225,7 +219,7 @@ export default function ProductTable() {
                     </IconButton>
                     <IconButton
                       color="error"
-                      onClick={() => handleDelete(coffee.id)}
+                      onClick={() => handleDelete(stock.id)}
                     >
                       <Delete />
                     </IconButton>
@@ -235,11 +229,11 @@ export default function ProductTable() {
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={6}
                   align="center"
                   sx={{ fontWeight: "bold", color: "#ff0000" }}
                 >
-                  Kahve bulunamadı.
+                  Stok bulunamadı.
                 </TableCell>
               </TableRow>
             )}
@@ -249,16 +243,16 @@ export default function ProductTable() {
 
       {/* Düzenleme Modalı */}
       <Dialog open={open} onClose={() => setOpen(false)}>
-        <DialogTitle>Kahveyi Düzenle</DialogTitle>
+        <DialogTitle>Stok Düzenle</DialogTitle>
         <DialogContent>
           <TextField
             fullWidth
-            label="Kahve İsmi"
+            label="Ürün Adı"
             variant="outlined"
             margin="dense"
-            value={editCoffee?.coffeeName || ""}
+            value={editStock?.productName || ""}
             onChange={(e) =>
-              setEditCoffee({ ...editCoffee, coffeeName: e.target.value })
+              setEditStock({ ...editStock, productName: e.target.value })
             }
           />
           <TextField
@@ -266,18 +260,18 @@ export default function ProductTable() {
             label="Miktar"
             variant="outlined"
             margin="dense"
-            value={editCoffee?.coffeeAmount || ""}
+            value={editStock?.quantity || ""}
             onChange={(e) =>
-              setEditCoffee({ ...editCoffee, coffeeAmount: e.target.value })
+              setEditStock({ ...editStock, quantity: e.target.value })
             }
           />
           <Select
             fullWidth
             variant="outlined"
             margin="dense"
-            value={editCoffee?.coffeeUnit || ""}
+            value={editStock?.unit || ""}
             onChange={(e) =>
-              setEditCoffee({ ...editCoffee, coffeeUnit: e.target.value })
+              setEditStock({ ...editStock, unit: e.target.value })
             }
           >
             {unitOptions.map((option) => (
@@ -288,32 +282,12 @@ export default function ProductTable() {
           </Select>
           <TextField
             fullWidth
-            label="Pompa Sayısı"
-            variant="outlined"
-            margin="dense"
-            value={editCoffee?.pumpCount || ""}
-            onChange={(e) =>
-              setEditCoffee({ ...editCoffee, pumpCount: e.target.value })
-            }
-          />
-          <TextField
-            fullWidth
-            label="Şurup Miktarı"
-            variant="outlined"
-            margin="dense"
-            value={editCoffee?.syrupAmount || ""}
-            onChange={(e) =>
-              setEditCoffee({ ...editCoffee, syrupAmount: e.target.value })
-            }
-          />
-          <TextField
-            fullWidth
             label="Stok Numarası"
             variant="outlined"
             margin="dense"
-            value={editCoffee?.roomStockNumber || ""}
+            value={editStock?.stockNumber || ""}
             onChange={(e) =>
-              setEditCoffee({ ...editCoffee, roomStockNumber: e.target.value })
+              setEditStock({ ...editStock, stockNumber: e.target.value })
             }
           />
         </DialogContent>
