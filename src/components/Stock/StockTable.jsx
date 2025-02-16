@@ -65,7 +65,7 @@ export default function StockTable() {
   // Arama işlemi
   const handleSearch = () => {
     const filtered = stocks.filter((stock) =>
-      stock.stockNumber.toLowerCase().includes(searchTerm.toLowerCase())
+      stock.StockCode.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredStocks(filtered);
   };
@@ -182,7 +182,7 @@ export default function StockTable() {
                   textAlign: "center",
                 }}
               >
-                Son Güncelleyen
+                Son Güncelleme
               </TableCell>
               <TableCell
                 sx={{
@@ -202,11 +202,11 @@ export default function StockTable() {
                   key={stock.id}
                   sx={{ "&:hover": { backgroundColor: "#eceff1" } }}
                 >
-                  <TableCell align="center">{stock.stockNumber}</TableCell>
-                  <TableCell align="center">{stock.productName}</TableCell>
-                  <TableCell align="center">{stock.quantity}</TableCell>
-                  <TableCell align="center">{stock.unit}</TableCell>
-                  <TableCell align="center">{stock.lastUpdatedBy}</TableCell>
+                  <TableCell align="center">{stock.StockCode}</TableCell>
+                  <TableCell align="center">{stock.Name}</TableCell>
+                  <TableCell align="center">{stock.Quantity}</TableCell>
+                  <TableCell align="center">{stock.Unit}</TableCell>
+                  <TableCell align="center">{stock.Date}</TableCell>
                   <TableCell align="center">
                     <IconButton
                       color="primary"
@@ -250,9 +250,9 @@ export default function StockTable() {
             label="Ürün Adı"
             variant="outlined"
             margin="dense"
-            value={editStock?.productName || ""}
+            value={editStock?.StockCode || ""}
             onChange={(e) =>
-              setEditStock({ ...editStock, productName: e.target.value })
+              setEditStock({ ...editStock, StockCode: e.target.value })
             }
           />
           <TextField
@@ -285,9 +285,9 @@ export default function StockTable() {
             label="Stok Numarası"
             variant="outlined"
             margin="dense"
-            value={editStock?.stockNumber || ""}
+            value={editStock?.StockCode || ""}
             onChange={(e) =>
-              setEditStock({ ...editStock, stockNumber: e.target.value })
+              setEditStock({ ...editStock, StockCode: e.target.value })
             }
           />
         </DialogContent>

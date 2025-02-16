@@ -17,7 +17,22 @@ import {
 } from "@mui/material";
 import { Add, Remove, Search } from "@mui/icons-material";
 import { getAuth } from "firebase/auth";
-import Logout from '../../components/Logout/Logout'
+import Logout from "../../components/Logout/Logout";
+
+// Yardımcı fonksiyon: Malzeme miktarını, reçete biriminden stok birimine çevirir
+function convertAmount(amount, fromUnit, toUnit) {
+  const amt = parseFloat(amount);
+  if (!amt || !fromUnit || !toUnit) return amt;
+  if (fromUnit.toLowerCase() === toUnit.toLowerCase()) return amt;
+  // Ağırlık dönüşümü: gr <-> kg
+  if (fromUnit.toLowerCase() === "gr" && toUnit.toLowerCase() === "kg") return amt / 1000;
+  if (fromUnit.toLowerCase() === "kg" && toUnit.toLowerCase() === "gr") return amt * 1000;
+  // Hacim dönüşümü: ml <-> lt
+  if (fromUnit.toLowerCase() === "ml" && toUnit.toLowerCase() === "lt") return amt / 1000;
+  if (fromUnit.toLowerCase() === "lt" && toUnit.toLowerCase() === "ml") return amt * 1000;
+  // Bilinmeyen dönüşüm durumunda, olduğu gibi döndür
+  return amt;
+}
 
 export default function WorkerPage() {
   const [recipes, setRecipes] = useState([]);
@@ -37,7 +52,7 @@ export default function WorkerPage() {
         setRecipes(fetchedRecipes);
         setFilteredRecipes(fetchedRecipes);
 
-        // Initialize sales count
+        // Başlangıç satış sayısını ayarla
         const initialSales = {};
         fetchedRecipes.forEach((recipe) => {
           initialSales[recipe.id] = recipe.sales || 0;
@@ -77,15 +92,83 @@ export default function WorkerPage() {
     setFilteredRecipes(filtered);
   };
 
+  // Satış işlemi: Firestore'da hem satış sayısı hem de stok güncellemesi yapılıyor.
   const handleSale = async (id) => {
-    const newSalesCount = sales[id] + 1;
-    setSales((prevSales) => ({ ...prevSales, [id]: newSalesCount }));
+    // Kullanıcının belirlediği satış adedini alıyoruz
+    const saleCount = sales[id] || 0;
+    if (saleCount <= 0) {
+      console.warn("Satış sayısı 0, işlem yapılmadı.");
+      return;
+    }
 
     try {
-      const coffeeDoc = doc(db, "coffees", id);
-      await updateDoc(coffeeDoc, { sales: newSalesCount });
+      // İlgili reçeteyi bul
+      const recipe = recipes.find((r) => r.id === id);
+      if (!recipe) {
+        console.error("Reçete bulunamadı");
+        return;
+      }
+
+      // 1. Kahve dokümanındaki satış sayısını güncelle (önceki satış sayısına ekleyerek)
+      const coffeeDocRef = doc(db, "coffees", id);
+      const newTotalSales = (recipe.sales || 0) + saleCount;
+      await updateDoc(coffeeDocRef, { sales: newTotalSales });
+
+      // 2. Ana malzemenin (kahve) stoktan düşülmesi
+      // Reçetede varsa 'coffeeAmount' ve 'coffeeUnit', yoksa mainIngredient üzerinden alıyoruz.
+      const coffeeUsageAmount =
+        recipe.coffeeAmount || (recipe.mainIngredient && recipe.mainIngredient.amount);
+      const coffeeUsageUnit =
+        recipe.coffeeUnit || (recipe.mainIngredient && recipe.mainIngredient.unit);
+      const coffeeStockCode = recipe.mainIngredient && recipe.mainIngredient.stockCode;
+      if (coffeeUsageAmount && coffeeUsageUnit && coffeeStockCode) {
+        const stockDocRef = doc(db, "stock", coffeeStockCode);
+        const stockSnap = await getDoc(stockDocRef);
+        if (stockSnap.exists()) {
+          const stockData = stockSnap.data();
+          const currentQuantity = parseFloat(stockData.Quantity);
+          // Reçetede belirtilen miktarı stok birimine çevir
+          const usagePerSale = convertAmount(coffeeUsageAmount, coffeeUsageUnit, stockData.Unit);
+          const totalUsage = saleCount * usagePerSale;
+          const newQuantity = currentQuantity - totalUsage;
+          await updateDoc(stockDocRef, { Quantity: newQuantity.toString() });
+        } else {
+          console.error("Stok dokümanı bulunamadı: ", coffeeStockCode);
+        }
+      }
+
+      // 3. Şurup kullanımının stoktan düşülmesi (varsa)
+      // Burada, reçetede 'syrupAmount' ve 'pumpCount' varsa ve extras dizisinde şurup bilgisi bulunuyorsa işleme alıyoruz.
+      if (recipe.syrupAmount && recipe.pumpCount && recipe.extras && recipe.extras.length > 0) {
+        const syrupExtra = recipe.extras[0];
+        const syrupStockCode = syrupExtra.stockCode;
+        const syrupUsageUnit = syrupExtra.unit; // Extras'tan gelen ölçü birimi
+        // Toplam şurup kullanımı = reçetedeki şurup miktarı + (pompa sayısı * 2 ml)
+        const baseSyrupAmount = parseFloat(recipe.syrupAmount);
+        const pumpUsage = parseFloat(recipe.pumpCount) * 2; // Her pompa 2 ml
+        const totalSyrupUsageRecipeUnit = baseSyrupAmount + pumpUsage;
+        const stockDocRef = doc(db, "stock", syrupStockCode);
+        const stockSnap = await getDoc(stockDocRef);
+        if (stockSnap.exists()) {
+          const stockData = stockSnap.data();
+          const currentQuantity = parseFloat(stockData.Quantity);
+          const usagePerSale = convertAmount(
+            totalSyrupUsageRecipeUnit,
+            syrupUsageUnit,
+            stockData.Unit
+          );
+          const totalUsage = saleCount * usagePerSale;
+          const newQuantity = currentQuantity - totalUsage;
+          await updateDoc(stockDocRef, { Quantity: newQuantity.toString() });
+        } else {
+          console.error("Stok dokümanı bulunamadı: ", syrupStockCode);
+        }
+      }
+
+      // İşlem tamamlandıktan sonra, satış adedini sıfırlıyoruz
+      setSales((prevSales) => ({ ...prevSales, [id]: 0 }));
     } catch (error) {
-      console.error("Error updating sales: ", error);
+      console.error("Satış işlemi sırasında hata:", error);
     }
   };
 
@@ -215,10 +298,18 @@ export default function WorkerPage() {
                   key={recipe.id}
                   sx={{ "&:hover": { backgroundColor: "#eceff1" } }}
                 >
-                  <TableCell align="center"> {recipe?.roomStockNumber}</TableCell>
+                  <TableCell align="center">
+                    {recipe?.roomStockNumber}
+                  </TableCell>
                   <TableCell align="center">{recipe?.coffeeName}</TableCell>
-                  <TableCell align="center">{recipe?.coffeeAmount}</TableCell>
-                  <TableCell align="center">{recipe?.coffeeUnit}</TableCell>
+                  <TableCell align="center">
+                    {recipe?.coffeeAmount ||
+                      (recipe.mainIngredient && recipe.mainIngredient.amount)}
+                  </TableCell>
+                  <TableCell align="center">
+                    {recipe?.coffeeUnit ||
+                      (recipe.mainIngredient && recipe.mainIngredient.unit)}
+                  </TableCell>
                   <TableCell align="center">{recipe?.syrupAmount}</TableCell>
                   <TableCell align="center">{recipe?.pumpCount}</TableCell>
                   <TableCell align="center">
@@ -260,7 +351,11 @@ export default function WorkerPage() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ fontWeight: "bold", color: "#ff0000" }}>
+                <TableCell
+                  colSpan={7}
+                  align="center"
+                  sx={{ fontWeight: "bold", color: "#ff0000" }}
+                >
                   Bu ürün bulunamamaktadır.
                 </TableCell>
               </TableRow>
