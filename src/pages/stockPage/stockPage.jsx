@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { Tabs, Tab, Box, Typography, Paper } from "@mui/material";
 import AddProduct from "../../components/Stock/AddProduct";
 import InventoryCheck from "../../components/Stock/InventoryCheck";
+import ExcelUploader from "../../components/ExcelReader/ExcelReader";
 
 export default function StockPage() {
   const [activeTab, setActiveTab] = useState(0);
@@ -22,12 +23,15 @@ export default function StockPage() {
           centered
         >
           <Tab label="Ürün Ekle" />
+          <Tab label="Toplu Ürün Ekle" />
           <Tab label="Sayım Yap" />
         </Tabs>
 
         {/* İçerik değişimi */}
         {activeTab === 0 && <AddProduct />}
-        {activeTab === 1 && <InventoryCheck />}
+        {activeTab === 1 && <ExcelUploader/>}
+        {activeTab === 2 && <InventoryCheck />}
+       
       </Paper>
     </Box>
   );

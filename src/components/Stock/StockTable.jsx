@@ -1,12 +1,6 @@
 import { useState, useEffect } from "react";
 import { db } from "../../firebase";
-import {
-  collection,
-  getDocs,
-  doc,
-  updateDoc,
-  deleteDoc,
-} from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import {
   Table,
   TableBody,
@@ -23,18 +17,9 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Select,
-  MenuItem,
-  Typography
+  Typography,
 } from "@mui/material";
 import { Edit, Delete } from "@mui/icons-material";
-
-const unitOptions = [
-  { value: "gr", label: "gr" },
-  { value: "kg", label: "kg" },
-  { value: "ml", label: "ml" },
-  { value: "lt", label: "lt" },
-];
 
 export default function StockTable() {
   const [stocks, setStocks] = useState([]);
@@ -43,49 +28,43 @@ export default function StockTable() {
   const [editStock, setEditStock] = useState(null);
   const [open, setOpen] = useState(false);
 
-  // Firestore'dan stok verilerini çek
+  // Firestore'dan "urunler" koleksiyonundaki verileri çekiyoruz
   useEffect(() => {
-    const fetchStocks = async () => {
+    const fetchProducts = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, "stock"));
-        const fetchedStocks = querySnapshot.docs.map((doc) => ({
+        const querySnapshot = await getDocs(collection(db, "urunler"));
+        const fetchedProducts = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
-        setStocks(fetchedStocks);
-        setFilteredStocks(fetchedStocks); // İlk etapta tüm veriler gösterilir
+        setStocks(fetchedProducts);
+        setFilteredStocks(fetchedProducts);
       } catch (error) {
-        console.error("Stokları çekerken hata:", error);
+        console.error("Verileri çekerken hata:", error);
       }
     };
 
-    fetchStocks();
+    fetchProducts();
   }, []);
 
-  // Arama işlemi
+  // Arama işlemi: productCode üzerinden arama
   const handleSearch = () => {
     const filtered = stocks.filter((stock) =>
-      stock.StockCode.toLowerCase().includes(searchTerm.toLowerCase())
+      stock.productCode.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredStocks(filtered);
   };
 
-  // Stok güncelleme
+  // Ürün güncelleme
   const handleUpdate = async () => {
     if (!editStock) return;
-
     try {
-      const stockRef = doc(db, "stock", editStock.id);
-      await updateDoc(stockRef, { ...editStock });
-
-      setStocks((prev) =>
-        prev.map((s) => (s.id === editStock.id ? editStock : s))
-      );
-
+      const productRef = doc(db, "urunler", editStock.id);
+      await updateDoc(productRef, { ...editStock });
+      setStocks((prev) => prev.map((s) => (s.id === editStock.id ? editStock : s)));
       setFilteredStocks((prev) =>
         prev.map((s) => (s.id === editStock.id ? editStock : s))
       );
-
       setOpen(false);
       setEditStock(null);
     } catch (error) {
@@ -93,10 +72,10 @@ export default function StockTable() {
     }
   };
 
-  // Stok silme
+  // Ürün silme
   const handleDelete = async (id) => {
     try {
-      await deleteDoc(doc(db, "stock", id));
+      await deleteDoc(doc(db, "urunler", id));
       setStocks((prev) => prev.filter((s) => s.id !== id));
       setFilteredStocks((prev) => prev.filter((s) => s.id !== id));
     } catch (error) {
@@ -106,7 +85,7 @@ export default function StockTable() {
 
   return (
     <Box sx={{ padding: 4, backgroundColor: "#f4f6f9", borderRadius: 3 }}>
-        <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <Typography
           variant="h4"
           fontWeight={600}
@@ -114,26 +93,20 @@ export default function StockTable() {
           mb={3}
           color="#37474f"
         >
-          Kahve Listesi
+          Product List
         </Typography>
-            <div className="flex justify-between gap-4">
-            <TextField
-     
-            label="Ara"
+        <div className="flex justify-between gap-4">
+          <TextField
+            label="Search"
             variant="outlined"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-                    <Button
-   
-            variant="contained"
-            color="primary"
-            onClick={handleSearch}
-          >
-            Ara
+          <Button variant="contained" color="primary" onClick={handleSearch}>
+            Search
           </Button>
-            </div>
         </div>
+      </div>
 
       <TableContainer component={Paper} sx={{ borderRadius: 3 }}>
         <Table>
@@ -146,7 +119,7 @@ export default function StockTable() {
                   textAlign: "center",
                 }}
               >
-                Stok Numarası
+                Ürün Kodu
               </TableCell>
               <TableCell
                 sx={{
@@ -155,7 +128,7 @@ export default function StockTable() {
                   textAlign: "center",
                 }}
               >
-                Ürün Adı
+                Ürün ismi
               </TableCell>
               <TableCell
                 sx={{
@@ -164,7 +137,7 @@ export default function StockTable() {
                   textAlign: "center",
                 }}
               >
-                Miktar
+               Ürün Miktarı
               </TableCell>
               <TableCell
                 sx={{
@@ -182,16 +155,7 @@ export default function StockTable() {
                   textAlign: "center",
                 }}
               >
-                Son Güncelleme
-              </TableCell>
-              <TableCell
-                sx={{
-                  fontWeight: "bold",
-                  color: "#ffffff",
-                  textAlign: "center",
-                }}
-              >
-                İşlemler
+                Actions
               </TableCell>
             </TableRow>
           </TableHead>
@@ -202,11 +166,10 @@ export default function StockTable() {
                   key={stock.id}
                   sx={{ "&:hover": { backgroundColor: "#eceff1" } }}
                 >
-                  <TableCell align="center">{stock.StockCode}</TableCell>
-                  <TableCell align="center">{stock.Name}</TableCell>
-                  <TableCell align="center">{stock.Quantity}</TableCell>
-                  <TableCell align="center">{stock.Unit}</TableCell>
-                  <TableCell align="center">{stock.Date}</TableCell>
+                  <TableCell align="center">{stock.productCode}</TableCell>
+                  <TableCell align="center">{stock.productName}</TableCell>
+                  <TableCell align="center">{stock.productQuantity}</TableCell>
+                  <TableCell align="center">{stock.unit}</TableCell>
                   <TableCell align="center">
                     <IconButton
                       color="primary"
@@ -229,11 +192,11 @@ export default function StockTable() {
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={6}
+                  colSpan={4}
                   align="center"
                   sx={{ fontWeight: "bold", color: "#ff0000" }}
                 >
-                  Stok bulunamadı.
+                  No Products Found.
                 </TableCell>
               </TableRow>
             )}
@@ -243,57 +206,42 @@ export default function StockTable() {
 
       {/* Düzenleme Modalı */}
       <Dialog open={open} onClose={() => setOpen(false)}>
-        <DialogTitle>Stok Düzenle</DialogTitle>
+        <DialogTitle>Edit Product</DialogTitle>
         <DialogContent>
           <TextField
             fullWidth
-            label="Ürün Adı"
+            label="Product Code"
             variant="outlined"
             margin="dense"
-            value={editStock?.StockCode || ""}
+            value={editStock?.productCode || ""}
             onChange={(e) =>
-              setEditStock({ ...editStock, StockCode: e.target.value })
+              setEditStock({ ...editStock, productCode: e.target.value })
             }
           />
           <TextField
             fullWidth
-            label="Miktar"
+            label="Product Name"
             variant="outlined"
             margin="dense"
-            value={editStock?.quantity || ""}
+            value={editStock?.productName || ""}
             onChange={(e) =>
-              setEditStock({ ...editStock, quantity: e.target.value })
+              setEditStock({ ...editStock, productName: e.target.value })
             }
           />
-          <Select
-            fullWidth
-            variant="outlined"
-            margin="dense"
-            value={editStock?.unit || ""}
-            onChange={(e) =>
-              setEditStock({ ...editStock, unit: e.target.value })
-            }
-          >
-            {unitOptions.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            ))}
-          </Select>
           <TextField
             fullWidth
-            label="Stok Numarası"
+            label="Product Quantity"
             variant="outlined"
             margin="dense"
-            value={editStock?.StockCode || ""}
+            value={editStock?.productQuantity || ""}
             onChange={(e) =>
-              setEditStock({ ...editStock, StockCode: e.target.value })
+              setEditStock({ ...editStock, productQuantity: e.target.value })
             }
           />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)} color="secondary">
-            İptal
+            Kapat
           </Button>
           <Button onClick={handleUpdate} color="primary">
             Kaydet

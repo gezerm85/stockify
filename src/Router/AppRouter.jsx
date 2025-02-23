@@ -10,6 +10,7 @@ import StockPage from '../pages/StockPage/StockPage';
 import Unauthorized from '../pages/Unauthorized/Unauthorized'; 
 import ProtectedRoute from './ProtectedRoute';
 import LogsPage from '../pages/LogsPage/LogsPage';
+import InventoryChecksList from '../pages/InventoryChecksList/InventoryChecksList';
 
 const AppRouter = () => {
   return (
@@ -59,6 +60,14 @@ const AppRouter = () => {
         element={
           <ProtectedRoute allowedRoles={['admin']}>
             <LogsPage />
+          </ProtectedRoute>
+        }
+      />
+            <Route
+        path="/census"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <InventoryChecksList/>
           </ProtectedRoute>
         }
       />

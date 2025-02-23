@@ -1,6 +1,5 @@
 /* eslint-disable no-unused-vars */
 import React from "react";
-import { AppBar, Toolbar, Typography, Grid } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import Logout from "../Logout/Logout";
 
@@ -8,63 +7,43 @@ const Header = () => {
   const navigate = useNavigate();
 
   return (
-    <AppBar position="static" sx={{ backgroundColor: "#263238" }}>
-      <Toolbar>
-        <Grid container alignItems="center">
-          {/* Sol tarafta Admin Panel butonu */}
-          <Grid item xs={4}>
-            <Typography
-              variant="h6"
-              sx={{ color: "#fff", cursor: "pointer" }}
-              onClick={() => navigate("/admin")}
-            >
-              Admin Panel
-            </Typography>
-          </Grid>
-
-          {/* Ortada Çalışan, Stok ve Kullanıcı ekle butonları */}
-          <Grid
-            item
-            xs={4}
-            sx={{ display: "flex", justifyContent: "center", gap: 3 }}
+    <header className="bg-[#263238] text-white">
+      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        {/* Sol: Admin Panel */}
+        <div className="w-1/3">
+          <div
+            className="cursor-pointer text-lg font-semibold whitespace-nowrap"
+            onClick={() => navigate("/admin")}
           >
-            <Typography
-              variant="body1"
-              sx={{ cursor: "pointer", color: "#fff" }}
-              onClick={() => navigate("/worker")}
-            >
-              Çalışan
-            </Typography>
-            <Typography
-              variant="body1"
-              sx={{ cursor: "pointer", color: "#fff" }}
-              onClick={() => navigate("/stock")}
-            >
-              Stok
-            </Typography>
-            <Typography
-              variant="body1"
-              sx={{ cursor: "pointer", color: "#fff" }}
-              onClick={() => navigate("/register")}
-            >
-              Kullanıcı ekle
-            </Typography>
-            <Typography
-              variant="body1"
-              sx={{ cursor: "pointer", color: "#fff" }}
-              onClick={() => navigate("/logs")}
-            >
-              Kullanıcı Hareketleri
-            </Typography>
-          </Grid>
+            Admin Panel
+          </div>
+        </div>
 
-          {/* Logout butonunu en sağa almak için xs yerine "auto" kullan ve justifyContent: "flex-end" ekle */}
-          <Grid item xs={4} sx={{ display: "flex", justifyContent: "flex-end" }}>
-            <Logout />
-          </Grid>
-        </Grid>
-      </Toolbar>
-    </AppBar>
+        {/* Ortada: Menü */}
+        <div className="w-1/3 flex justify-center gap-6">
+          <div className="cursor-pointer whitespace-nowrap" onClick={() => navigate("/worker")}>
+            Satış 
+          </div>
+          <div className="cursor-pointer whitespace-nowrap" onClick={() => navigate("/stock")}>
+            Stok
+          </div>
+          <div className="cursor-pointer whitespace-nowrap" onClick={() => navigate("/register")}>
+            Kullanıcı ekle
+          </div>
+          {/* <div className="cursor-pointer whitespace-nowrap" onClick={() => navigate("/logs")}>
+            Kullanıcı Hareketleri
+          </div> */}
+          <div className="cursor-pointer whitespace-nowrap" onClick={() => navigate("/census")}>
+            Sayım
+          </div>
+        </div>
+
+        {/* Sağ: Logout */}
+        <div className="w-1/3 flex justify-end">
+          <Logout />
+        </div>
+      </div>
+    </header>
   );
 };
 
